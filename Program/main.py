@@ -29,7 +29,7 @@ def main(args):
 
     content = PrizePicks.scrape_prizepicks(args['refresh'])
 
-    print(content)
+    # print(content)
 
     # TODO: ask user for which sport they want
     # TODO: show the picks for the given sport

@@ -6,7 +6,7 @@ import selenium
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
-import ujson
+import ujson as json
 
 # TODO: skim PrizePicks page / open most recent PrizePicks
 # TODO: save PrizePicks info to file
@@ -45,13 +45,14 @@ def scrape_prizepicks(force_scrape: bool = False) -> str:
         # open the site in a Chrome window
         # then get all the picks
         options = webdriver.ChromeOptions()
-        driver_path = 'chromedriver.exe'
         driver = webdriver.Chrome(options=options)
         driver.get(prizepicks_url)
         time.sleep(6.25)
         content = driver.find_element(by=By.XPATH, value="/html/body/pre").text
 
         driver.quit()
+
+        save_prizepicks_content(prizepicks_file_url, content)
 
         return content
 
@@ -77,3 +78,18 @@ def scrape_prizepicks(force_scrape: bool = False) -> str:
         else:
             print(f"Could not successfully get content from {prizepicks_file_url}! Forcing scrape!")
             return scrape_prizepicks(force_scrape=True)
+
+
+def save_prizepicks_content(path: str, content: str) -> None:
+    global loaded_from_json
+
+    if loaded_from_json:
+        return
+
+    # convert the content string to JSON
+    json_content = json.loads(content)
+
+    # write the JSON data to the file
+    file = open(path, "w")
+    json.dump(json_content, file, indent=4)
+    file.close()
