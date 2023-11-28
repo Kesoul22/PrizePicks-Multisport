@@ -27,8 +27,6 @@ def main(args):
 
     print("Hello World!")
 
-    # PrizePicks.scrape_prizepicks(args['refresh'])
-
     PrizePicks.initialize(args['refresh'])
 
     # TODO: ask user for which sport they want

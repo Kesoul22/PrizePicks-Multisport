@@ -18,6 +18,8 @@ prizepicks_file_url = "PrizePicks Content.json"
 prizepicks_url = 'https://api.prizepicks.com/projections'
 league_id_dict: dict[int, str] = {}
 
+player_data_dict: dict[str, typing.Any] = {}
+
 
 class PrizePicksEntry:
     def __init__(self, information: dict[str, dict[str, any]]):
@@ -103,8 +105,8 @@ def save_prizepicks_content(path: str, content: str) -> dict[str, typing.Any]:
     return json_content
 
 
-def convert_content_to_picks(json_content_dict: dict[str, typing.Any]) -> dict[str, list[PrizePicksEntry]]:
-    global league_id_dict
+def convert_content_to_picks(json_content_dict: dict[str, typing.Any]) -> dict[str, dict[str, list[PrizePicksEntry]]]:
+    global league_id_dict, player_data_dict
 
     # constant values for the IDs of each league
     ID_NFL = "1"
@@ -120,7 +122,7 @@ def convert_content_to_picks(json_content_dict: dict[str, typing.Any]) -> dict[s
 
     # key   :   player ID
     # value :   player information
-    player_data_dict: dict[str, dict[str, typing.Any]] = {}
+    player_data_dict = {}
 
     # add all available players to the dictionary
     for item in player_content:
@@ -134,12 +136,18 @@ def convert_content_to_picks(json_content_dict: dict[str, typing.Any]) -> dict[s
         player_data_dict[player_id] = item
 
     # key   :   League string / id
-    # value :   list of Picks
-    picks_dict: dict[str, list[PrizePicksEntry]] = {}
+    # value :   dictionary
+    #       key     : string of category name
+    #       value   : list of Picks
+    picks_dict: dict[str, dict[str, list[PrizePicksEntry]]] = {}
 
     for item in projection_content:
         # skip non-projection items
         if item['type'] != 'projection':
+            continue
+
+        # skip all games that are currently being played
+        if item['attributes']['status'] != "pre_game":
             continue
 
         player_id = item['relationships']['new_player']['data']['id']
@@ -180,13 +188,19 @@ def convert_content_to_picks(json_content_dict: dict[str, typing.Any]) -> dict[s
         # if the pick's corresponding league is not in the dictionary,
         # add the league to the dictionary
         if league_name not in picks_dict:
-            picks_dict[league_name] = []
+            picks_dict[league_name] = dict()
 
         # create the pick
-        entry: PrizePicksEntry = PrizePicksEntry(player_data_dict[player_id])
+        entry: PrizePicksEntry = PrizePicksEntry(item)
+
+        # store the stat category
+        stat_category = item['attributes']['stat_type']
+
+        if stat_category not in picks_dict[league_name]:
+            picks_dict[league_name][stat_category] = []
 
         # add the pick to the corresponding league's list
-        picks_dict[league_name].append(entry)
+        picks_dict[league_name][stat_category].append(entry)
 
     return picks_dict
 
@@ -198,11 +212,18 @@ def initialize(force_scrape):
 
     json_content = save_prizepicks_content(prizepicks_file_url, content)
 
-    picks_dict: dict[str, list[PrizePicksEntry]] = convert_content_to_picks(json_content)
+    picks_dict: dict[str, dict[str, list[PrizePicksEntry]]] = convert_content_to_picks(json_content)
 
     for pick_id in picks_dict:
-        print(f"{pick_id.ljust(10)} ({len(picks_dict[pick_id]).__str__().center(3)}) : ", end="")
-        for pick in picks_dict[pick_id]:
-            print(f"{pick.pick_information['id'].__str__().ljust(6)} ", end=" ")
-        print()
+        print(f"{pick_id}")
+        for stat_category in picks_dict[pick_id]:
+            print(f"\t({len(picks_dict[pick_id][stat_category]).__str__().center(3)}) {stat_category.ljust(25)} : ", end="")
+            for pick in picks_dict[pick_id][stat_category]:
+                print(f"{pick.pick_information['id'].__str__().ljust(6)} ", end=" ")
 
+                if pick.pick_information['attributes']['status'] != "pre_game":
+                    print(pick.pick_information['attributes']['status'].__str__(), end="")
+                    return
+
+            print()
+        print()
