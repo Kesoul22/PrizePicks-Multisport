@@ -1,6 +1,6 @@
 import argparse
 import typing
-import PrizePicks
+import PrizePicks as PP
 
 
 def parse_arguments() -> dict[str, typing.Any]:
@@ -27,9 +27,14 @@ def main(args):
 
     print("Hello World!")
 
-    # PrizePicks.scrape_prizepicks(args['refresh'])
+    PP.initialize(args['refresh'])
 
-    PrizePicks.initialize(args['refresh'])
+    league = input("League?: ")
+    stat_type = input("Category?: ")
+    pick_id = input("ID?: ")
+
+    print(f"{PP.picks_dict[league][stat_type][pick_id]}")
+
 
     # TODO: ask user for which sport they want
     # TODO: show the picks for the given sport

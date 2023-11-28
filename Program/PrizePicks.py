@@ -9,6 +9,8 @@ from selenium.webdriver.common.by import By
 
 import ujson as json
 
+from PrizePicksEntry import PrizePicksEntry
+
 # TODO: skim PrizePicks page / open most recent PrizePicks
 # TODO: save PrizePicks info to file
 # TODO: separate picks by sport
@@ -18,11 +20,8 @@ prizepicks_file_url = "PrizePicks Content.json"
 prizepicks_url = 'https://api.prizepicks.com/projections'
 league_id_dict: dict[int, str] = {}
 
-
-class PrizePicksEntry:
-    def __init__(self, information: dict[str, dict[str, any]]):
-        self.pick_information = information
-
+player_data_dict: dict[str, typing.Any] = {}
+picks_dict: dict[str, dict[str, dict[str, PrizePicksEntry]]] = {}
 
 
 def scrape_prizepicks(force_scrape: bool = False) -> str:
@@ -103,8 +102,8 @@ def save_prizepicks_content(path: str, content: str) -> dict[str, typing.Any]:
     return json_content
 
 
-def convert_content_to_picks(json_content_dict: dict[str, typing.Any]) -> dict[str, list[PrizePicksEntry]]:
-    global league_id_dict
+def convert_content_to_picks(json_content_dict: dict[str, typing.Any]) -> dict[str, dict[str, dict[str, PrizePicksEntry]]]:
+    global league_id_dict, player_data_dict, picks_dict
 
     # constant values for the IDs of each league
     ID_NFL = "1"
@@ -120,7 +119,7 @@ def convert_content_to_picks(json_content_dict: dict[str, typing.Any]) -> dict[s
 
     # key   :   player ID
     # value :   player information
-    player_data_dict: dict[str, dict[str, typing.Any]] = {}
+    player_data_dict = {}
 
     # add all available players to the dictionary
     for item in player_content:
@@ -134,12 +133,20 @@ def convert_content_to_picks(json_content_dict: dict[str, typing.Any]) -> dict[s
         player_data_dict[player_id] = item
 
     # key   :   League string / id
-    # value :   list of Picks
-    picks_dict: dict[str, list[PrizePicksEntry]] = {}
+    # value :   dictionary
+    #       key     : string of category name
+    #       value   : dictionary
+    #           key     : id string of pick
+    #           value   : pick
+    picks_dict = {}
 
     for item in projection_content:
         # skip non-projection items
         if item['type'] != 'projection':
+            continue
+
+        # skip all games that are currently being played
+        if item['attributes']['status'] != "pre_game":
             continue
 
         player_id = item['relationships']['new_player']['data']['id']
@@ -180,29 +187,41 @@ def convert_content_to_picks(json_content_dict: dict[str, typing.Any]) -> dict[s
         # if the pick's corresponding league is not in the dictionary,
         # add the league to the dictionary
         if league_name not in picks_dict:
-            picks_dict[league_name] = []
+            picks_dict[league_name] = dict()
 
         # create the pick
-        entry: PrizePicksEntry = PrizePicksEntry(player_data_dict[player_id])
+        entry: PrizePicksEntry = PrizePicksEntry(item)
+
+        # store the stat category
+        stat_category = item['attributes']['stat_type'].strip()
+
+        if stat_category not in picks_dict[league_name]:
+            picks_dict[league_name][stat_category] = {}
 
         # add the pick to the corresponding league's list
-        picks_dict[league_name].append(entry)
+        picks_dict[league_name][stat_category][item['id']] = entry
+        print(f"ITEM ID: {item['id']}")
 
     return picks_dict
 
 
 def initialize(force_scrape):
-    global prizepicks_file_url
+    global prizepicks_file_url, picks_dict
     content = scrape_prizepicks(force_scrape=force_scrape)
     print()
 
     json_content = save_prizepicks_content(prizepicks_file_url, content)
 
-    picks_dict: dict[str, list[PrizePicksEntry]] = convert_content_to_picks(json_content)
+    picks_dict = convert_content_to_picks(json_content)
 
-    for pick_id in picks_dict:
-        print(f"{pick_id.ljust(10)} ({len(picks_dict[pick_id]).__str__().center(3)}) : ", end="")
-        for pick in picks_dict[pick_id]:
-            print(f"{pick.pick_information['id'].__str__().ljust(6)} ", end=" ")
+    for league_id in picks_dict:
+        print(f"{league_id}")
+        for stat_category in picks_dict[league_id]:
+            print(f"\t({len(picks_dict[league_id][stat_category]).__str__().center(3)}) {stat_category.ljust(25)} : ", end="")
+            for pick_id in picks_dict[league_id][stat_category]:
+                pick = picks_dict[league_id][stat_category][pick_id]
+                print(f"{pick_id.__str__().ljust(6)} ", end=" ")
+                # print(f"{picks_dict[league_id][stat_category]} ")
+
+            print()
         print()
-

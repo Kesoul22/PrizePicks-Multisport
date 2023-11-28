@@ -78,3 +78,5 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 /PrizePicks Content.json
+
+Program/__pycache__/
