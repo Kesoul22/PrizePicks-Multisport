@@ -119,7 +119,7 @@ def convert_content_to_picks(json_content_dict: dict[str, typing.Any]) -> dict[s
 
     # key   :   player ID
     # value :   player information
-    player_data_dict = {}
+    player_data_dict: dict[str, dict[str, typing.Any]] = {}
 
     # add all available players to the dictionary
     for item in player_content:
