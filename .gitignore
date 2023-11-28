@@ -79,4 +79,5 @@ fabric.properties
 
 /PrizePicks Content.json
 
-Program/__pycache__/
+/Program/__pycache__/
+/Program/PrizePicks Content.json

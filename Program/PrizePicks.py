@@ -119,7 +119,7 @@ def convert_content_to_picks(json_content_dict: dict[str, typing.Any]) -> dict[s
 
     # key   :   player ID
     # value :   player information
-    player_data_dict: dict[str, dict[str, typing.Any]] = {}
+    player_data_dict = {}
 
     # add all available players to the dictionary
     for item in player_content:
@@ -200,7 +200,6 @@ def convert_content_to_picks(json_content_dict: dict[str, typing.Any]) -> dict[s
 
         # add the pick to the corresponding league's list
         picks_dict[league_name][stat_category][item['id']] = entry
-        print(f"ITEM ID: {item['id']}")
 
     return picks_dict
 
@@ -214,14 +213,14 @@ def initialize(force_scrape):
 
     picks_dict = convert_content_to_picks(json_content)
 
-    for league_id in picks_dict:
-        print(f"{league_id}")
-        for stat_category in picks_dict[league_id]:
-            print(f"\t({len(picks_dict[league_id][stat_category]).__str__().center(3)}) {stat_category.ljust(25)} : ", end="")
-            for pick_id in picks_dict[league_id][stat_category]:
-                pick = picks_dict[league_id][stat_category][pick_id]
-                print(f"{pick_id.__str__().ljust(6)} ", end=" ")
-                # print(f"{picks_dict[league_id][stat_category]} ")
-
-            print()
-        print()
+    # for league_id in picks_dict:
+    #     print(f"{league_id}")
+    #     for stat_category in picks_dict[league_id]:
+    #         print(f"\t({len(picks_dict[league_id][stat_category]).__str__().center(3)}) {stat_category.ljust(25)} : ", end="")
+    #         for pick_id in picks_dict[league_id][stat_category]:
+    #             pick = picks_dict[league_id][stat_category][pick_id]
+    #             print(f"{pick_id.__str__().ljust(6)} ", end=" ")
+    #             # print(f"{picks_dict[league_id][stat_category]} ")
+    #
+    #         print()
+    #     print()

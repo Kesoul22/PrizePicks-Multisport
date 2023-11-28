@@ -2,6 +2,13 @@ import argparse
 import typing
 import PrizePicks as PP
 
+from consolemenu import *
+from consolemenu.items import *
+
+from simple_term_menu import TerminalMenu
+from MenuWrapper import *
+import PrizePicksEntry
+
 
 def parse_arguments() -> dict[str, typing.Any]:
 
@@ -22,6 +29,24 @@ def parse_arguments() -> dict[str, typing.Any]:
     return vars(parser.parse_args())
 
 
+def menu_test_1():
+    # create the menu
+    menu = ConsoleMenu(title="Title thing", subtitle="subtitle thing")
+
+    # menu items
+    menu_item = MenuItem("Menu item 1")
+
+    selection_menu = SelectionMenu(["item1", "item2", "item3"])
+    # A SubmenuItem lets you add a menu (the selection_menu above, for example)
+    # as a submenu of another menu
+    submenu_item = SubmenuItem("Submenu item", selection_menu, menu)
+
+    menu.append_item(menu_item)
+    menu.append_item(submenu_item)
+
+    menu.show()
+
+
 def main(args):
     print(f"Parsed Args: {args}")
 
@@ -29,15 +54,29 @@ def main(args):
 
     PP.initialize(args['refresh'])
 
-    league = input("League?: ")
-    stat_type = input("Category?: ")
-    pick_id = input("ID?: ")
+    # initialize the menu
+    # league -> category -> pick id
+    pick_menu_dict = {}
 
-    print(f"{PP.picks_dict[league][stat_type][pick_id]}")
+    for league in PP.picks_dict:
 
+        category_dict = {}
 
-    # TODO: ask user for which sport they want
-    # TODO: show the picks for the given sport
+        for category in PP.picks_dict[league]:
+
+            pick_id_dict: dict[str, PrizePicksEntry] = {}
+            for pick_id in PP.picks_dict[league][category]:
+                pick_id_dict[PP.picks_dict[league][category][pick_id].pick_string] = PP.picks_dict[league][category][pick_id]
+
+            category_dict[category] = MenuWrapperNode(pick_id_dict, title=f"Picks for [{category}] ({league})")
+
+        pick_menu_dict[league] = MenuWrapperNode(category_dict, title=f"Categories for [{league}]")
+
+    menu_wrapper = MenuWrapper(MenuWrapperNode(pick_menu_dict, isHead=True, title="Leagues"))
+    chosen_pick: PrizePicksEntry = menu_wrapper.show()
+
+    print(f"{chosen_pick.pick_id} - {chosen_pick.display_name}")
+
     # TODO: get the stats for each team
     # TODO: get the stats for each player
 
